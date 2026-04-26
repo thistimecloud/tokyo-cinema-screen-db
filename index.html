@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>都内映画館スクリーンサイズ検索DB v8 ranking</title>
+<title>都内映画館スクリーンサイズ検索DB v9 screen select</title>
 <style>
 :root{
   --bg:#f6f5f1; --card:#fff; --ink:#151515; --muted:#737373; --line:#e7e2da;
@@ -18,9 +18,9 @@ header{padding:22px 16px 12px;max-width:1160px;margin:0 auto;}
 h1{margin:0 0 8px;font-size:clamp(20px,5.2vw,30px);letter-spacing:-.04em;line-height:1.15;}
 .lead{margin:0;color:var(--muted);font-size:13px;line-height:1.6;}
 .controls{position:sticky;top:0;z-index:20;background:rgba(246,245,241,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.55);border-bottom:1px solid var(--line);padding:10px 12px;}
-.controls-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1.5fr .75fr .75fr .75fr .75fr;gap:10px;align-items:center;}
+.controls-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1.35fr 1.1fr .7fr .7fr .7fr .7fr;gap:10px;align-items:center;}
 .field{min-width:0} label{display:block;font-size:11px;color:var(--muted);margin:0 0 4px 2px;}
-input,select,button{width:100%;min-height:44px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;padding:0 12px;outline:none;}
+input,select,button{width:100%;min-height:44px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;padding:0 12px;outline:none;} select:disabled{color:#999;background:#f8f7f3;}
 input:focus,select:focus{border-color:#111;box-shadow:0 0 0 3px rgba(0,0,0,.08)}
 .mobile-actions{display:none;gap:8px} button{font-weight:700;cursor:pointer;background:#111;color:#fff;border-color:#111}
 main{max-width:1160px;margin:0 auto;padding:14px 12px 80px;}
@@ -53,12 +53,13 @@ a{color:#2563eb;text-decoration:none}.cards{display:none}
 </head>
 <body>
 <header>
-  <h1>都内映画館スクリーンサイズ検索DB v8</h1>
-  <p class="lead">映画館名・スクリーン名で検索できます。面積ランクと横幅ランク、サイズ感の一言コメント付き。公式値・参考値・席数推定が混在します。</p>
+  <h1>都内映画館スクリーンサイズ検索DB v9</h1>
+  <p class="lead">映画館名を検索すると、対応するスクリーンをドロップダウンで選べます。面積ランクと横幅ランク、サイズ感の一言コメント付き。公式値・参考値・席数推定が混在します。</p>
 </header>
 <section class="controls">
   <div class="controls-inner">
-    <div class="field search"><label for="q">検索</label><input id="q" placeholder="例：渋谷 / 板橋 / 多摩センター / TOHO / バルト9" autocomplete="off"></div>
+    <div class="field search"><label for="q">映画館名検索</label><input id="q" placeholder="例：渋谷 / 板橋 / 多摩センター / TOHO / バルト9" autocomplete="off"></div>
+    <div class="field"><label for="screenSelect">スクリーン選択</label><select id="screenSelect"><option value="all">すべてのスクリーン</option></select></div>
     <div class="field"><label for="sort">並び替え</label><select id="sort"><option value="area">面積ランク順</option><option value="width">横幅ランク順</option><option value="height">高さ順</option><option value="seats">座席数順</option><option value="name">映画館名順</option></select></div>
     <div class="field"><label for="kind">データ種別</label><select id="kind"><option value="all">全データ</option><option value="official">公式・参考のみ</option><option value="estimate">席数推定のみ</option></select></div>
     <div class="field"><label for="minw">横幅</label><select id="minw"><option value="0">指定なし</option><option value="10">10m以上</option><option value="12">12m以上</option><option value="15">15m以上</option><option value="20">20m以上</option></select></div>
@@ -68,7 +69,7 @@ a{color:#2563eb;text-decoration:none}.cards{display:none}
 </section>
 <main>
   <div class="legend">
-    <div class="legend-item"><b>面積ランク</b>スクリーン全体の大きさ。迫力重視。</div>
+    <div class="legend-item"><b>スクリーン選択</b>映画館名を入れると、該当館のスクリーンを選べます。</div>
     <div class="legend-item"><b>横幅ランク</b>シネスコ映画のワイド感に効きます。</div>
     <div class="legend-item"><b>サイズ感</b>面積からざっくり分類。</div>
     <div class="legend-item"><b>席数推定</b>公式サイズ非掲載のため目安です。</div>
@@ -114,17 +115,64 @@ DATA.forEach(r=>{
   r['サイズ感']=si.label; r['サイズレベル']=si.level; r['サイズ一言']=si.comment;
 });
 
-const q=document.getElementById('q'); const sort=document.getElementById('sort'); const kind=document.getElementById('kind'); const minw=document.getElementById('minw'); const sizeFilter=document.getElementById('sizeFilter');
+const q=document.getElementById('q'); const screenSelect=document.getElementById('screenSelect'); const sort=document.getElementById('sort'); const kind=document.getElementById('kind'); const minw=document.getElementById('minw'); const sizeFilter=document.getElementById('sizeFilter');
 const tbody=document.getElementById('tbody'); const cards=document.getElementById('cards'); const stats=document.getElementById('stats'); const clearBtn=document.getElementById('clearBtn'); const toTop=document.getElementById('toTop'); const topBtn2=document.getElementById('topBtn2');
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function n(v,d=1){const num=Number(v); return Number.isFinite(num)?num.toFixed(d):'-';}
 function badge(t){let cls=t.includes('推定')?'est':(t.includes('公式')?'official':'ref'); return '<span class="badge '+cls+'">'+esc(t)+'</span>';}
 function sizeBadge(r){return '<span class="size-badge '+esc(r['サイズレベル'])+'">'+esc(r['サイズ感'])+'</span>';}
+
+function updateScreenOptions(){
+  const term=q.value.trim().toLowerCase();
+  const current=screenSelect.value;
+  screenSelect.innerHTML='';
+  const allOpt=document.createElement('option');
+  allOpt.value='all'; allOpt.textContent='すべてのスクリーン';
+  screenSelect.appendChild(allOpt);
+
+  if(!term){
+    const hint=document.createElement('option');
+    hint.value='__hint'; hint.textContent='映画館名を入力すると候補が出ます'; hint.disabled=true;
+    screenSelect.appendChild(hint);
+    screenSelect.value='all';
+    return;
+  }
+
+  const matches=DATA.filter(r=>{
+    const text=(r['映画館名']+' '+r['スクリーン']+' '+r['チェーン']).toLowerCase();
+    return text.includes(term);
+  });
+  const byCinema=new Map();
+  matches.forEach(r=>{
+    if(!byCinema.has(r['映画館名'])) byCinema.set(r['映画館名'],[]);
+    byCinema.get(r['映画館名']).push(r);
+  });
+  const cinemas=[...byCinema.keys()].sort((a,b)=>a.localeCompare(b,'ja'));
+  allOpt.textContent = matches.length ? 'すべてのスクリーン（'+matches.length+'件）' : '該当スクリーンなし';
+
+  cinemas.forEach(cinema=>{
+    const group=document.createElement('optgroup');
+    group.label=cinema;
+    byCinema.get(cinema)
+      .sort((a,b)=>(a['スクリーン']||'').localeCompare(b['スクリーン']||'','ja',{numeric:true}))
+      .forEach(r=>{
+        const opt=document.createElement('option');
+        opt.value=cinema+'||'+r['スクリーン'];
+        opt.textContent=r['スクリーン']+'｜'+r['サイズ感']+'｜横幅 '+n(r['横幅m'])+'m / 面積 '+n(r['面積㎡'],2)+'㎡';
+        group.appendChild(opt);
+      });
+    screenSelect.appendChild(group);
+  });
+  const values=[...screenSelect.querySelectorAll('option')].map(o=>o.value);
+  screenSelect.value=values.includes(current)?current:'all';
+}
+
 function filtered(){
-  const term=q.value.trim().toLowerCase(); const k=kind.value; const mw=parseFloat(minw.value||0); const sf=sizeFilter.value;
+  const term=q.value.trim().toLowerCase(); const selectedScreen=screenSelect.value; const k=kind.value; const mw=parseFloat(minw.value||0); const sf=sizeFilter.value;
   let arr=DATA.filter(r=>{
     const text=(r['映画館名']+' '+r['スクリーン']+' '+r['チェーン']+' '+r['備考']+' '+r['サイズ感']).toLowerCase();
     if(term && !text.includes(term)) return false;
+    if(selectedScreen && selectedScreen!=='all' && selectedScreen!=='__hint'){ const parts=selectedScreen.split('||'); if(r['映画館名']!==parts[0] || r['スクリーン']!==parts.slice(1).join('||')) return false; }
     if(k==='official' && r['データ種別'].includes('推定')) return false;
     if(k==='estimate' && !r['データ種別'].includes('推定')) return false;
     if((Number(r['横幅m'])||0)<mw) return false;
@@ -143,7 +191,8 @@ function filtered(){
 }
 function render(){
   const arr=filtered(); const official=arr.filter(r=>!r['データ種別'].includes('推定')).length; const est=arr.length-official; const top=arr[0];
-  stats.innerHTML='<span class="stat">表示：'+arr.length+'件</span><span class="stat">公式/参考：'+official+'件</span><span class="stat">席数推定：'+est+'件</span>'+(top?'<span class="stat">先頭：#'+top['面積ランク']+' '+esc(top['映画館名'])+' '+esc(top['スクリーン'])+'</span>':'');
+  const selLabel=(screenSelect.value&&screenSelect.value!=='all'&&screenSelect.value!=='__hint')?screenSelect.options[screenSelect.selectedIndex].textContent:'';
+  stats.innerHTML='<span class="stat">表示：'+arr.length+'件</span><span class="stat">公式/参考：'+official+'件</span><span class="stat">席数推定：'+est+'件</span>'+(selLabel?'<span class="stat">選択中：'+esc(selLabel)+'</span>':'')+(top?'<span class="stat">先頭：#'+top['面積ランク']+' '+esc(top['映画館名'])+' '+esc(top['スクリーン'])+'</span>':'');
   if(!arr.length){tbody.innerHTML='<tr><td colspan="13">該当なし</td></tr>'; cards.innerHTML='<div class="empty">該当するスクリーンがありません。検索語を短くするか、フィルターを外してください。</div>'; return;}
   tbody.innerHTML=arr.map(r=>'<tr>'+
     '<td class="rank">#'+esc(r['面積ランク'])+'<br><small>面積</small></td>'+
@@ -169,10 +218,11 @@ function render(){
     '<div class="card-note">'+esc(r['備考'])+'</div><a class="source-link" href="'+esc(r['出典URL'])+'" target="_blank" rel="noopener">出典を見る</a>'+
   '</article>').join('');
 }
-function clearSearch(){q.value=''; kind.value='all'; minw.value='0'; sizeFilter.value='all'; render(); q.focus();}
+function clearSearch(){q.value=''; kind.value='all'; minw.value='0'; sizeFilter.value='all'; updateScreenOptions(); render(); q.focus();}
 function scrollTopNow(){window.scrollTo({top:0,behavior:'smooth'});} 
-[q,sort,kind,minw,sizeFilter].forEach(el=>{el.addEventListener('input',render);el.addEventListener('change',render);el.addEventListener('keyup',render);});
+q.addEventListener('input',()=>{updateScreenOptions(); render();}); q.addEventListener('keyup',()=>{updateScreenOptions(); render();}); q.addEventListener('change',()=>{updateScreenOptions(); render();}); [screenSelect,sort,kind,minw,sizeFilter].forEach(el=>{el.addEventListener('input',render);el.addEventListener('change',render);el.addEventListener('keyup',render);});
 clearBtn.addEventListener('click',clearSearch); toTop.addEventListener('click',scrollTopNow); topBtn2.addEventListener('click',scrollTopNow); window.addEventListener('scroll',()=>{toTop.style.display=window.scrollY>400?'block':'';});
+updateScreenOptions();
 render();
 </script>
 </body>
